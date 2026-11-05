@@ -122,7 +122,14 @@ internal static class QuantumCli
     {
         var options = Parse(args);
         var source = Require(options, "source");
-        var support = Require(options, "quantum-version-support");
+        var sdkSupport = Get(options, "sdk-version-support");
+        var legacySupport = Get(options, "quantum-version-support");
+        if (sdkSupport is not null && legacySupport is not null)
+        {
+            throw new CliException("Use --sdk-version-support alone; host and SDK ranges are different contracts.");
+        }
+        var support = sdkSupport ?? legacySupport ?? Require(options, "sdk-version-support");
+        var supportProperty = sdkSupport is not null ? "sdkVersionSupport" : "quantumVersionSupport";
         var output = Get(options, "output") ?? "text";
         if (output is not ("text" or "subprocess")) throw new CliException("--output must be 'text' or 'subprocess'.");
         var waitText = Get(options, "wait-seconds") ?? "0";
@@ -162,20 +169,22 @@ internal static class QuantumCli
         if (existing is { } found)
         {
             if (found.GetProperty("packageSha256").GetString() != sha256 ||
-                found.GetProperty("quantumVersionSupport").GetString() != support)
+                !found.TryGetProperty(supportProperty, out var existingSupport) || existingSupport.GetString() != support)
+            {
                 throw new CliException("This version already exists with a different package or compatibility range. Bump plugin.json version.");
+            }
             release = found;
         }
         else
         {
-            release = await SendRpcAsync(http, "UploadPluginRelease", new
+            release = await SendRpcAsync(http, "UploadPluginRelease", new Dictionary<string, object?>
             {
-                pluginId = manifest.Id,
-                version = manifest.Version,
-                quantumVersionSupport = support,
-                releaseNotes = Get(options, "release-notes") ?? string.Empty,
-                packageArchiveBase64 = Convert.ToBase64String(archive),
-                expectedSha256 = sha256
+                ["pluginId"] = manifest.Id,
+                ["version"] = manifest.Version,
+                [supportProperty] = support,
+                ["releaseNotes"] = Get(options, "release-notes") ?? string.Empty,
+                ["packageArchiveBase64"] = Convert.ToBase64String(archive),
+                ["expectedSha256"] = sha256
             }, token.AccessToken);
         }
 
@@ -319,7 +328,7 @@ internal static class QuantumCli
         Quantum Platform CLI
 
         quantum-cli clients create --email <email> --client-id <id> --display-name <name> --plugins <id,id> --private-jwks-output <file>
-        quantum-cli plugins publish <folder-or-zip> --quantum-version-support <range> [options]
+        quantum-cli plugins publish <folder-or-zip> --sdk-version-support <range> [options]
 
         Options:
           --release-notes <text>
