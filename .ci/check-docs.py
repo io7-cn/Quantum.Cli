@@ -24,6 +24,14 @@ for edition, other in (("en", "zh-CN"), ("zh-CN", "en")):
             path = (source.parent / unquote(target.path)).resolve() if target.path else source
             if not path.is_relative_to(root) or not path.exists():
                 errors.append(f"{source.relative_to(root)}: unresolved link {link}")
+            if target.fragment and path.exists() and path.suffix == ".md":
+                target_body = path.read_text(encoding="utf-8-sig")
+                anchors = set(re.findall(r'<a\s+id="([^"]+)"', target_body))
+                for heading in re.findall(r"^#{1,6} (.+)$", target_body, flags=re.MULTILINE):
+                    heading = re.sub(r"\[([^]]+)\]\([^)]+\)", r"\1", heading)
+                    anchors.add(re.sub(r"[^\w -]", "", heading.lower()).replace(" ", "-"))
+                if unquote(target.fragment) not in anchors:
+                    errors.append(f"{source.relative_to(root)}: missing anchor {link}")
             resolved.append(path)
         if counterpart.resolve() not in resolved:
             errors.append(f"{source.relative_to(root)}: missing counterpart link")
