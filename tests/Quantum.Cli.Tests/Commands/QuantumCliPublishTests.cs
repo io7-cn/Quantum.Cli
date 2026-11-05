@@ -7,9 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Quantum.Cli.Tests.Publishing;
+namespace Quantum.Cli.Tests.Commands;
 
-public sealed class CliPublishTests
+public sealed class QuantumCliPublishTests
 {
     private static readonly string[] ExistingReleaseMethods = ["ListPluginReleases"];
 

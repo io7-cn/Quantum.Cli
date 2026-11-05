@@ -12,6 +12,10 @@ internal static partial class QuantumCli
         var displayName = Require(options, "display-name");
         var plugins = Require(options, "plugins").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var outputPath = Path.GetFullPath(Require(options, "private-jwks-output"));
+        if (File.Exists(outputPath) || Directory.Exists(outputPath))
+        {
+            throw new CliException("The private key output path must not already exist.");
+        }
         var baseUrl = Get(options, "base-url") ?? Environment.GetEnvironmentVariable("QUANTUM_PLATFORM_URL") ?? DefaultBaseUrl;
         using var http = new HttpClient { BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/") };
         var userToken = Environment.GetEnvironmentVariable("QUANTUM_USER_TOKEN");
@@ -31,14 +35,20 @@ internal static partial class QuantumCli
             userToken);
         var privateJwks = created.GetProperty("generatedKeySet").GetProperty("privateJsonWebKeySet").GetString()
             ?? throw new CliException("The platform did not return generated private JWKS.");
-        await using (var stream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        var fileOptions = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            Share = FileShare.None
+        };
+        if (!OperatingSystem.IsWindows())
+        {
+            fileOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+        await using (var stream = new FileStream(outputPath, fileOptions))
         await using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
         {
             await writer.WriteAsync(privateJwks);
-        }
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(outputPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
         Console.WriteLine($"Created Credential Client '{clientId}'. Private JWKS was written once to {outputPath}.");
         return 0;
