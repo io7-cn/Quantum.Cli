@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -19,7 +20,8 @@ internal static partial class QuantumCli
 
             if (args[0] is "--version" or "version")
             {
-                Console.WriteLine(typeof(QuantumCli).Assembly.GetName().Version?.ToString(3) ?? "unknown");
+                Console.WriteLine(typeof(QuantumCli).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
+                    ?? typeof(QuantumCli).Assembly.GetName().Version?.ToString(3) ?? "unknown");
                 return 0;
             }
 
