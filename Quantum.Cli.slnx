@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Quantum.Cli/Quantum.Cli.csproj" />
+  <Project Path="tests/Quantum.Cli.Tests/Quantum.Cli.Tests.csproj" />
+</Solution>

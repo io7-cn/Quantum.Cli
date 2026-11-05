@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+/artifacts/
+**/TestResults/
+.vs/
+.vscode/
+.idea/
+.env
+.env.*
+*.user
+*.log
+*.nupkg
+*.snupkg
+*.pfx
+*.p12
+__pycache__/

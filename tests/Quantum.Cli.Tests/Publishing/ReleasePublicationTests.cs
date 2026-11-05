@@ -1,6 +1,8 @@
+using Quantum.Cli.Commands;
+using Quantum.Cli.Publishing;
 using System.Text.Json;
 
-namespace Quantum.Platform.Tests;
+namespace Quantum.Cli.Tests.Publishing;
 
 public sealed class ReleasePublicationTests
 {
@@ -28,6 +30,6 @@ public sealed class ReleasePublicationTests
     public void RejectedManualFailedAndUnknownCannotSucceed(string status, string review)
     {
         using var json = JsonDocument.Parse($$"""{"status":{{status}},"automatedReviewStatus":{{review}}} """);
-        Assert.Throws<QuantumCli.CliException>(() => ReleasePublication.Evaluate(json.RootElement));
+        Assert.Throws<CliException>(() => ReleasePublication.Evaluate(json.RootElement));
     }
 }

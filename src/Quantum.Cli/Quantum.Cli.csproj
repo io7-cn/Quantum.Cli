@@ -9,13 +9,20 @@
     <AssemblyName>quantum-cli</AssemblyName>
     <PackageId>Quantum.Platform.Cli</PackageId>
     <Version>0.2.0</Version>
-    <Authors>Quantum Platform</Authors>
+    <Authors>IO7</Authors>
     <Description>Official CLI for unattended Quantum plugin publication.</Description>
-    <PackageProjectUrl>https://quantum.io-vii.com</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/io7-cn/Quantum.Cli</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/io7-cn/Quantum.Cli</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>quantum; plugin; cli; dotnet-tool; oidc</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="Quantum.Platform.Tests" />
+    <InternalsVisibleTo Include="Quantum.Cli.Tests" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="../../NOTICE" Pack="true" PackagePath="/" />
   </ItemGroup>
 </Project>

@@ -1,13 +1,18 @@
+using Quantum.Cli.Commands;
+using Quantum.Cli.Packaging;
+using System.Buffers.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Quantum.Platform.Tests;
+namespace Quantum.Cli.Tests.Publishing;
 
 public sealed class CliPublishTests
 {
+    private static readonly string[] ExistingReleaseMethods = ["ListPluginReleases"];
+
     [Theory]
     [InlineData(false, false, 0, false)]
     [InlineData(false, false, 0, true)]
@@ -15,7 +20,7 @@ public sealed class CliPublishTests
     [InlineData(true, false, 0, true)]
     [InlineData(true, true, 1, false)]
     [InlineData(true, true, 1, true)]
-    public async Task Publish_UsesPrivateKeyUploadAndExistingRelease(bool existing, bool changed, int exitCode, bool sdk)
+    public async Task PublishUsesPrivateKeyUploadAndExistingRelease(bool existing, bool changed, int exitCode, bool sdk)
     {
         var root = Path.Combine(Path.GetTempPath(), "quantum-cli-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -27,10 +32,8 @@ public sealed class CliPublishTests
             var keyFile = Path.Combine(root, "private.json");
             using var rsa = RSA.Create(2048);
             var key = rsa.ExportParameters(true);
-            string B(byte[]? bytes) => Convert.ToBase64String(bytes!).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-            await File.WriteAllTextAsync(keyFile, JsonSerializer.Serialize(new { keys = new[] { new { kid = "test", kty = "RSA", n = B(key.Modulus), e = B(key.Exponent), d = B(key.D), p = B(key.P), q = B(key.Q), dp = B(key.DP), dq = B(key.DQ), qi = B(key.InverseQ) } } }));
-            var createArchive = typeof(QuantumCli).GetMethod("CreateArchive", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
-            var archive = (byte[])createArchive.Invoke(null, [source])!;
+            await File.WriteAllTextAsync(keyFile, JsonSerializer.Serialize(new { keys = new[] { new { kid = "test", kty = "RSA", n = Base64Url.EncodeToString(key.Modulus!), e = Base64Url.EncodeToString(key.Exponent!), d = Base64Url.EncodeToString(key.D!), p = Base64Url.EncodeToString(key.P!), q = Base64Url.EncodeToString(key.Q!), dp = Base64Url.EncodeToString(key.DP!), dq = Base64Url.EncodeToString(key.DQ!), qi = Base64Url.EncodeToString(key.InverseQ!) } } }));
+            var archive = PluginArchive.Create(source);
             var sha = Convert.ToHexStringLower(SHA256.HashData(archive));
             var socket = new TcpListener(IPAddress.Loopback, 0);
             socket.Start();
@@ -73,7 +76,9 @@ public sealed class CliPublishTests
                             response = new { result = new { isSuccess = true, value = release with { status = 1, automatedReviewStatus = 1 } } };
                         }
                         else
+                        {
                             response = new { result = new { isSuccess = true, value = existing || i == 3 ? new[] { release } : [] } };
+                        }
                     }
                     var bytes = JsonSerializer.SerializeToUtf8Bytes(response);
                     context.Response.ContentType = "application/json";
@@ -84,7 +89,7 @@ public sealed class CliPublishTests
             var actual = await QuantumCli.RunAsync(["plugins", "publish", source, sdk ? "--sdk-version-support" : "--quantum-version-support", sdk ? "0.3.0-rc.2" : ">=0.1.0", "--base-url", url, "--client-id", "test-ci", "--client-private-jwks", keyFile, "--wait-seconds", "1", "--output", "subprocess"]);
             await serve;
             Assert.Equal(exitCode, actual);
-            Assert.Equal(existing ? new[] { "ListPluginReleases" } : new[] { "ListPluginReleases", "UploadPluginRelease", "ListPluginReleases" }, requests);
+            Assert.Equal(existing ? ExistingReleaseMethods : ["ListPluginReleases", "UploadPluginRelease", "ListPluginReleases"], requests);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
