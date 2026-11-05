@@ -17,6 +17,8 @@ quantum-cli --version
 quantum-cli plugins publish ./dist/plugin --sdk-version-support "0.3.0-rc.2" --wait-seconds 300 --output subprocess
 ```
 
+SDK 兼容选项要求 CLI 0.2.0 或更高版本。若安装的 NuGet 发行版较旧，请使用 [.ci/Verify.ps1](../../.ci/Verify.ps1) 生成并验证的本地工具，直至兼容版本发布。
+
 源码包版本由 [Quantum.Cli.csproj](../../src/Quantum.Cli/Quantum.Cli.csproj) 定义，源码变更不会自动发布包。
 
 发布包含根级 `plugin.json` 的文件夹，或已有 ZIP 归档。文件夹打包按固定顺序处理文件，使用固定 ZIP 时间戳，并排除 .git、bin 和 obj 目录。仅发布已准备好的分发目录；其余文件（包括隐藏文件）都会被包含。只有内容摘要和兼容范围均一致时才复用已有版本，冲突版本会失败。`--sdk-version-support` 描述插件 SDK 兼容范围，与 Desktop 版本独立。保留旧的 `--quantum-version-support` 选项，两者互斥。

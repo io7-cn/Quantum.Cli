@@ -17,6 +17,8 @@ quantum-cli --version
 quantum-cli plugins publish ./dist/plugin --sdk-version-support "0.3.0-rc.2" --wait-seconds 300 --output subprocess
 ```
 
+SDK compatibility options require CLI 0.2.0 or later. If the installed NuGet release is older, use the verified local tool produced by [.ci/Verify.ps1](../../.ci/Verify.ps1) until a compatible package is published.
+
 The source package version is defined in [Quantum.Cli.csproj](../../src/Quantum.Cli/Quantum.Cli.csproj). Source changes do not publish a package automatically.
 
 Publish a folder containing root-level `plugin.json` or an existing ZIP archive. Folder packaging orders files deterministically, uses fixed ZIP timestamps and excludes .git, bin and obj directories. Publish only a prepared distribution folder; other files, including hidden files, are included. Existing versions are reused only if the content digest and compatibility range match; a conflicting version fails. `--sdk-version-support` describes the plugin SDK, independently of Desktop versions. The legacy `--quantum-version-support` option remains available; the two options are mutually exclusive.
