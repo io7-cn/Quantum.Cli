@@ -78,9 +78,10 @@ internal static partial class QuantumCli
         Quantum Platform CLI
 
         quantum-cli clients create --email <email> --client-id <id> --display-name <name> --plugins <id,id> --private-jwks-output <file>
-        quantum-cli plugins publish <folder-or-zip> --sdk-version-support <range> [options]
+        quantum-cli plugins publish <folder-or-zip> [options]
 
         Options:
+          --sdk-version-support <range>    Web plugins; .NET SDK version is detected by the platform
           --release-notes <text>
           --base-url <url>                 or QUANTUM_PLATFORM_URL
           --client-id <id>                 or QUANTUM_CLIENT_ID

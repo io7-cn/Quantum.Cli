@@ -8,7 +8,7 @@
     <ToolCommandName>quantum-cli</ToolCommandName>
     <AssemblyName>quantum-cli</AssemblyName>
     <PackageId>Quantum.Platform.Cli</PackageId>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Authors>IO7</Authors>
     <Description>Official CLI for unattended Quantum plugin publication.</Description>
     <PackageProjectUrl>https://github.com/io7-cn/Quantum.Cli</PackageProjectUrl>

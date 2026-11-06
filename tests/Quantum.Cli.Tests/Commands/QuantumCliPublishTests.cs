@@ -20,7 +20,10 @@ public sealed class QuantumCliPublishTests
     [InlineData(true, false, 0, true)]
     [InlineData(true, true, 1, false)]
     [InlineData(true, true, 1, true)]
-    public async Task PublishUsesPrivateKeyUploadAndExistingRelease(bool existing, bool changed, int exitCode, bool sdk)
+    [InlineData(false, false, 0, true, true)]
+    [InlineData(true, false, 0, true, true)]
+    [InlineData(true, true, 1, true, true)]
+    public async Task PublishUsesPrivateKeyUploadAndExistingRelease(bool existing, bool changed, int exitCode, bool sdk, bool automatic = false)
     {
         var root = Path.Combine(Path.GetTempPath(), "quantum-cli-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -70,7 +73,14 @@ public sealed class QuantumCliPublishTests
                         {
                             var parameters = json.RootElement.GetProperty("params");
                             Assert.Equal(sha, parameters.GetProperty("expectedSha256").GetString());
-                            Assert.Equal(sdk ? "0.3.0-rc.2" : ">=0.1.0", parameters.GetProperty(sdk ? "sdkVersionSupport" : "quantumVersionSupport").GetString());
+                            if (automatic)
+                            {
+                                Assert.False(parameters.TryGetProperty("sdkVersionSupport", out _));
+                            }
+                            else
+                            {
+                                Assert.Equal(sdk ? "0.3.0-rc.2" : ">=0.1.0", parameters.GetProperty(sdk ? "sdkVersionSupport" : "quantumVersionSupport").GetString());
+                            }
                             Assert.False(parameters.TryGetProperty(sdk ? "quantumVersionSupport" : "sdkVersionSupport", out _));
                             Assert.Equal(archive, Convert.FromBase64String(parameters.GetProperty("packageArchiveBase64").GetString()!));
                             response = new { result = new { isSuccess = true, value = release with { status = 1, automatedReviewStatus = 1 } } };
@@ -86,7 +96,8 @@ public sealed class QuantumCliPublishTests
                     context.Response.Close();
                 }
             });
-            var actual = await QuantumCli.RunAsync(["plugins", "publish", source, sdk ? "--sdk-version-support" : "--quantum-version-support", sdk ? "0.3.0-rc.2" : ">=0.1.0", "--base-url", url, "--client-id", "test-ci", "--client-private-jwks", keyFile, "--wait-seconds", "1", "--output", "subprocess"]);
+            string[] compatibility = automatic ? [] : [sdk ? "--sdk-version-support" : "--quantum-version-support", sdk ? "0.3.0-rc.2" : ">=0.1.0"];
+            var actual = await QuantumCli.RunAsync(["plugins", "publish", source, .. compatibility, "--base-url", url, "--client-id", "test-ci", "--client-private-jwks", keyFile, "--wait-seconds", "1", "--output", "subprocess"]);
             await serve;
             Assert.Equal(exitCode, actual);
             Assert.Equal(existing ? ExistingReleaseMethods : ["ListPluginReleases", "UploadPluginRelease", "ListPluginReleases"], requests);

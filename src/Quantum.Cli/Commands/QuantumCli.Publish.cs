@@ -20,7 +20,7 @@ internal static partial class QuantumCli
         {
             throw new CliException("Use --sdk-version-support alone; host and SDK ranges are different contracts.");
         }
-        var support = sdkSupport ?? legacySupport ?? Require(options, "sdk-version-support");
+        var support = sdkSupport ?? legacySupport;
         var supportProperty = sdkSupport is not null ? "sdkVersionSupport" : "quantumVersionSupport";
         var output = Get(options, "output") ?? "text";
         if (output is not ("text" or "subprocess"))
@@ -68,7 +68,8 @@ internal static partial class QuantumCli
         if (existing is { } found)
         {
             if (found.GetProperty("packageSha256").GetString() != sha256 ||
-                !found.TryGetProperty(supportProperty, out var existingSupport) || existingSupport.GetString() != support)
+                (support is not null &&
+                    (!found.TryGetProperty(supportProperty, out var existingSupport) || existingSupport.GetString() != support)))
             {
                 throw new CliException("This version already exists with a different package or compatibility range. Bump plugin.json version.");
             }
@@ -76,15 +77,19 @@ internal static partial class QuantumCli
         }
         else
         {
-            release = await PlatformRpcClient.SendAsync(http, "UploadPluginRelease", new Dictionary<string, object?>
+            var parameters = new Dictionary<string, object?>
             {
                 ["pluginId"] = manifest.Id,
                 ["version"] = manifest.Version,
-                [supportProperty] = support,
                 ["releaseNotes"] = Get(options, "release-notes") ?? string.Empty,
                 ["packageArchiveBase64"] = Convert.ToBase64String(archive),
                 ["expectedSha256"] = sha256
-            }, token.AccessToken);
+            };
+            if (support is not null)
+            {
+                parameters[supportProperty] = support;
+            }
+            release = await PlatformRpcClient.SendAsync(http, "UploadPluginRelease", parameters, token.AccessToken);
         }
 
         var deadline = DateTimeOffset.UtcNow.AddSeconds(waitSeconds);

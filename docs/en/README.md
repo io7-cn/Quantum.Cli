@@ -14,14 +14,18 @@ Install a published NuGet tool version with .NET 10. The package remains `Quantu
 dotnet tool install --global Quantum.Platform.Cli
 quantum-cli --help
 quantum-cli --version
-quantum-cli plugins publish ./dist/plugin --sdk-version-support "0.3.0-rc.2" --wait-seconds 300 --output subprocess
+quantum-cli plugins publish ./dist/plugin --wait-seconds 300 --output subprocess
 ```
 
 SDK compatibility options require CLI 0.2.0 or later. If the installed NuGet release is older, use the verified local tool produced by [.ci/Verify.ps1](../../.ci/Verify.ps1) until a compatible package is published.
 
+Publishing without a compatibility option requires CLI 0.3.0 and the platform's automatic SDK detection. Until 0.3.0 is published, use the verified local tool. Deploy the server change first; older servers cannot infer an omitted SDK version.
+
 The source package version is defined in [Quantum.Cli.csproj](../../src/Quantum.Cli/Quantum.Cli.csproj). Source changes do not publish a package automatically.
 
-Publish a folder containing root-level `plugin.json` or an existing ZIP archive. Folder packaging orders files deterministically, uses fixed ZIP timestamps and excludes .git, bin and obj directories. Publish only a prepared distribution folder; other files, including hidden files, are included. Existing versions are reused only if the content digest and compatibility range match; a conflicting version fails. `--sdk-version-support` describes the plugin SDK, independently of Desktop versions. The legacy `--quantum-version-support` option remains available; the two options are mutually exclusive.
+Publish a folder containing root-level `plugin.json` or an existing ZIP archive. Folder packaging orders files deterministically, uses fixed ZIP timestamps and excludes .git, bin and obj directories. Publish only a prepared distribution folder; other files, including hidden files, are included. Existing versions are reused only if the content digest matches; explicitly supplied compatibility fields must also match. A conflicting version fails.
+
+For .NET plugins, include `Quantum.Plugin.Abstraction.dll` at the package root beside the entry DLL. The platform reads its informational version without executing plugin code, checks the entry's SDK reference, and records the exact SDK version including prerelease identifiers. No compatibility option is needed. Missing or inconsistent assemblies fail validation. `--sdk-version-support` remains available for Web plugins to declare a tested SDK range, independently of Desktop versions. When explicitly used for .NET, it must equal the detected exact version. The legacy `--quantum-version-support` option remains available; the two options are mutually exclusive.
 
 `--wait-seconds` accepts 0–3600 and defaults to zero: submit without waiting. Positive values poll until publication or timeout. Rejection, manual review, review failure and unknown states fail. Timeout does not withdraw an already submitted release; rerun the same package to check it. `--output text` is the default; `subprocess` writes one machine-readable success object to standard output. Errors and progress go to standard error; exit codes are 0 for success and 1 for handled failures.
 
