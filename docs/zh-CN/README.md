@@ -14,14 +14,18 @@
 dotnet tool install --global Quantum.Platform.Cli
 quantum-cli --help
 quantum-cli --version
-quantum-cli plugins publish ./dist/plugin --sdk-version-support "0.3.0-rc.2" --wait-seconds 300 --output subprocess
+quantum-cli plugins publish ./dist/plugin --wait-seconds 300 --output subprocess
 ```
 
 SDK 兼容选项要求 CLI 0.2.0 或更高版本。若安装的 NuGet 发行版较旧，请使用 [.ci/Verify.ps1](../../.ci/Verify.ps1) 生成并验证的本地工具，直至兼容版本发布。
 
 源码包版本由 [Quantum.Cli.csproj](../../src/Quantum.Cli/Quantum.Cli.csproj) 定义，源码变更不会自动发布包。
 
-发布包含根级 `plugin.json` 的文件夹，或已有 ZIP 归档。文件夹打包按固定顺序处理文件，使用固定 ZIP 时间戳，并排除 .git、bin 和 obj 目录。仅发布已准备好的分发目录；其余文件（包括隐藏文件）都会被包含。只有内容摘要和兼容范围均一致时才复用已有版本，冲突版本会失败。`--sdk-version-support` 描述插件 SDK 兼容范围，与 Desktop 版本独立。保留旧的 `--quantum-version-support` 选项，两者互斥。
+省略兼容选项需要 CLI 0.3.0 和平台自动识别 SDK 的能力。0.3.0 正式发包前使用已验证的本地工具。先部署服务端变更，旧服务端无法推断省略的 SDK 版本。
+
+发布包含根级 `plugin.json` 的文件夹，或已有 ZIP 归档。文件夹打包按固定顺序处理文件，使用固定 ZIP 时间戳，并排除 .git、bin 和 obj 目录。仅发布已准备好的分发目录；其余文件（包括隐藏文件）都会被包含。只有内容摘要一致时才复用已有版本；显式指定兼容选项时，对应字段和值也必须相同。冲突版本会失败。
+
+.NET 插件需在包根目录的入口 DLL 旁包含 `Quantum.Plugin.Abstraction.dll`。平台读取其信息版本、核对入口的 SDK 引用并保存包含预发布标识的精确 SDK 版本，整个过程不执行插件代码，无需填写兼容选项。程序集缺失或不一致会校验失败。Web 插件仍使用 `--sdk-version-support` 声明已测试的 SDK 范围，与 Desktop 版本独立；.NET 插件显式填写时必须等于识别出的精确版本。保留旧的 `--quantum-version-support` 选项，两者互斥。
 
 `--wait-seconds` 接受 0–3600，默认零表示仅提交、不等待；正值轮询至发布成功或超时。拒绝、人工审核、审核失败和未知状态均失败。超时不会撤回已提交版本，可以使用同一安装包重试检查。`--output text` 为默认模式，`subprocess` 向标准输出写入一个机器可读的成功对象。错误与进度写入标准错误；成功退出码为 0，已处理失败为 1。
 
